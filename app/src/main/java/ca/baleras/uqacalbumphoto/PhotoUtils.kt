@@ -20,9 +20,8 @@ fun getDevicePhotos(context: Context): List<String> {
         while (it.moveToNext()) {
             val id = it.getLong(columnIndex)
             val photoUri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id.toString())
-            Log.d("getDevicePhotos TAG", "Photo found: $photoUri")
             photos.add(photoUri.toString())
         }
-    } ?: Log.d("getDevicePhotos TAG", "Cursor is null")
+    } ?: Log.d("getDevicePhotos", "Cursor is null")
     return photos
 }

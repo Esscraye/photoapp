@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.libs
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -60,4 +62,11 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.navigation.compose)
 
+    implementation(libs.coil.kt.coil.compose)
+    implementation(libs.coil.gif)
+    implementation("io.coil-kt.coil3:coil-core")
+
+
+    implementation("androidx.compose.material:material-icons-extended:1.7.5")
+    implementation("com.google.accompanist:accompanist-pager:0.24.13-rc")
 }

@@ -1,17 +1,21 @@
 package ca.baleras.uqacalbumphoto
 
+import PhotoViewerScreen
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import ca.baleras.uqacalbumphoto.ui.theme.UqacAlbumPhotoTheme
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import okio.Path.Companion.toOkioPath
 
 class MainActivity : ComponentActivity() {
     private val REQUEST_CODE_PERMISSIONS = 10
@@ -21,21 +25,25 @@ class MainActivity : ComponentActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("TAG", "onCreate: ")
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        Log.d("TAG", "onCreate: allPermissionsGranted")
+
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache(MemoryCache.Builder(this).maxSizePercent(0.25).build())
+            .diskCache(DiskCache.Builder().directory(filesDir.toOkioPath()).build())
+            .build()
+
         setContent {
             UqacAlbumPhotoTheme {
                 val navController = rememberNavController()
                 val photos = loadPhotos()
                 NavHost(navController = navController, startDestination = "photoGrid") {
                     composable("photoGrid") {
-                        PhotoGridScreen(navController, photos)
+                        PhotoGridScreen(navController, photos, imageLoader)
                     }
                     composable("photoViewer/{index}") { backStackEntry ->
                         val index = backStackEntry.arguments?.getString("index")?.toInt() ?: 0
-                        PhotoViewerScreen(photos, index, navController)
+                        PhotoViewerScreen(photos, index, navController, imageLoader)
                     }
                 }
             }
@@ -43,42 +51,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        Log.d("TAG", "allPermissionsGranted: ")
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun loadPhotos(): List<String> {
-        Log.d("TAG", "loadPhotos: ")
-        return getDevicePhotos(this)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                setContent {
-                    UqacAlbumPhotoTheme {
-                        val navController = rememberNavController()
-                        val photos = loadPhotos()
-                        NavHost(navController = navController, startDestination = "photoGrid") {
-                            composable("photoGrid") {
-                                PhotoGridScreen(navController, photos)
-                            }
-                            composable("photoViewer/{index}") { backStackEntry ->
-                                val index = backStackEntry.arguments?.getString("index")?.toInt() ?: 0
-                                PhotoViewerScreen(photos, index, navController)
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Handle the case where permissions are not granted
-                List(200) { "https://picsum.photos/200/300?random=$it" }
-            }
+        if (!allPermissionsGranted()) {
+            requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
+        return getDevicePhotos(this)
     }
 }
